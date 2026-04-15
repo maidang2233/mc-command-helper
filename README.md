@@ -22,7 +22,7 @@ InventivetalentDev提供playsound的音效、
 
 还有大冤种gemini
 
-<img width="455" height="1927" alt="image" src="https://github.com/user-attachments/assets/1b1b6d15-b132-4238-bc95-88449a5aeddb" />
+<img width="319" height="1349" alt="image" src="https://github.com/user-attachments/assets/1b1b6d15-b132-4238-bc95-88449a5aeddb" />
 
 (不要管多出来的截图awa)
 
