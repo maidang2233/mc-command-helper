@@ -545,7 +545,7 @@
             </div>
         </div>
         <div class="credits">
-            感谢原作者 ProjectXero 提供的开源工具链与数据支持
+            感谢原作者 ProjectXero 和南鸢晨星的数据支持
         </div>
     </div>
 
@@ -563,7 +563,7 @@
         async function loadData() {
             try {
                 // 加载命令库
-                const response = await fetch('默认命令库.json');
+                const response = await fetch('data.json');
                 mcData = await response.json();
 
                 // 加载声音库
