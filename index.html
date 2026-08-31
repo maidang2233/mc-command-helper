@@ -6,22 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>maidang 指令助手</title>
     <style>
-        @font-face {
-            font-family: 'MinecraftFont';
-            /* 这是你给字体起的名字 */
-            src: url('fonts/minecraft_fort.ttf') format('truetype');
-            /* 确保路径正确 */
-            font-weight: normal;
-            font-style: normal;
-        }
-
-
-        /* 2. 定义图标字体 */
-        @font-face {
-            font-family: 'Material Symbols Outlined';
-            src: url('fonts/material-symbols-outlined.woff2') format('woff2');
-        }
-
         body {
             font-family: var(--main-font);
         }
@@ -37,7 +21,7 @@
         :root {
             --main-font: 'MinecraftFont', 'Roboto', sans-serif;
 
-            /* M3 官方配色方案 */
+            /* M3 官方配色方案 - 亮色 */
             --md-sys-color-primary: #6750A4;
             --md-sys-color-on-primary: #FFFFFF;
             --md-sys-color-primary-container: #EADDFF;
@@ -51,9 +35,25 @@
             --md-sys-color-outline: #79747E;
             --md-sys-color-error: #B3261E;
 
-            /* Elevation 阴影 */
             --md-sys-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
             --md-sys-elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 【新增】暗色模式下的颜色变量 */
+        :root.dark,
+        body.dark {
+            --md-sys-color-primary: #d8b9ff;
+            --md-sys-color-on-primary: #381e72;
+            --md-sys-color-primary-container: #4f378b;
+            --md-sys-color-on-primary-container: #e9ddff;
+            --md-sys-color-surface: #1c1b1f;
+            --md-sys-color-on-surface: #e6e1e5;
+            --md-sys-color-surface-container: #211f26;
+            --md-sys-color-surface-container-high: #26242c;
+            --md-sys-color-surface-container-highest: #2b2930;
+            --md-sys-color-on-surface-variant: #c4bed4;
+            --md-sys-color-outline: #938f99;
+            --md-sys-color-error: #f2b8b5;
         }
 
         body {
@@ -127,7 +127,6 @@
 
         .status-analysis {
             margin-top: 20px;
-            padding-top: 16px;
             border-top: 1px solid var(--md-sys-color-outline);
             opacity: 0.9;
         }
@@ -377,7 +376,6 @@
             /* 让高度根据内容撑开 */
             min-height: 130px;
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.1);
             /* 浅色背景 */
         }
 
@@ -512,6 +510,22 @@
                 margin-left: 0;
             }
         }
+
+        /* 主题切换按钮 (省略，与原文件保持一致) */
+        .theme-toggle {
+            margin-left: auto;
+            border: none;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--md-sys-color-on-surface);
+            border-radius: 50%;
+            user-select: none;
+            -webkit-user-select: none;
+        }
     </style>
 </head>
 
@@ -519,6 +533,9 @@
     <header>
         <span class="material-symbols-outlined">terminal</span>
         我的世界指令助手
+        <button id="theme-toggle" class="theme-toggle">
+            <img id="desktop-theme-icon" src="img/sun.png" style="width: 32px;height: 32px;" alt="Theme Toggle">
+        </button>
     </header>
 
     <div id="main-content">
@@ -527,10 +544,7 @@
             <div id="syntax-box" class="syntax-display">/</div>
 
             <div id="status-area" class="status-analysis" style="display: none;">
-                <div class="status-title">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">analytics</span>
-                    逻辑分析
-                </div>
+                
                 <div id="error-box"></div>
             </div>
         </div>
@@ -551,6 +565,8 @@
 
 
     <script>
+        let isCurrentDark = document.documentElement.classList.contains('dark');
+        let basePath = decodeURIComponent(window.location.pathname).includes('指令助手') ? '' : '指令助手/';
         let currentSuggestions = [];
         let selectedIndex = -1;
         let mcData = null;
@@ -560,14 +576,68 @@
         const statusArea = document.getElementById('status-area');
         const cardLabel = document.getElementById('card-label');
 
+        function updateThemeIcons(isDark) {
+            const icon = document.getElementById('desktop-theme-icon');
+            if (icon) {
+                // 假设你的月亮图标文件名是 moon.png，太阳是 sun.png
+                icon.src = isDark ? 'img/moon.png' : 'img/sun.png';
+            }
+        }
+        const fontFaceCss = `
+        @font-face {
+            font-family: 'MinecraftFont';
+            /* 这是你给字体起的名字 */
+            src: url('${basePath}fonts/minecraft_fort.ttf') format('truetype');
+            /* 确保路径正确 */
+            font-weight: normal;
+            font-style: normal;
+        }
+
+
+        /* 2. 定义图标字体 */
+        @font-face {
+            font-family: 'Material Symbols Outlined';
+            src: url('${basePath}fonts/material-symbols-outlined.woff2') format('woff2');
+        }
+
+`;
+
+        // 3. 将其注入到 <head> 中
+        const style = document.createElement('style');
+        style.textContent = fontFaceCss;
+        document.head.appendChild(style);
+
+        updateThemeIcons(isCurrentDark);
         async function loadData() {
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            function toggleTheme() {
+                isCurrentDark = !isCurrentDark;
+
+                // 使用现有的 syncTheme 逻辑
+                syncTheme(isCurrentDark);
+
+                // 更新图标
+                updateThemeIcons(isCurrentDark);
+
+                // 保存状态
+                localStorage.setItem('theme', isCurrentDark ? 'dark' : 'light');
+
+                // 通知 iframe
+                const iframes = document.querySelectorAll('iframe');
+                iframes.forEach(iframe => {
+                    iframe.contentWindow.postMessage({
+                        type: 'themeChange',
+                        isDark: isCurrentDark
+                    }, '*');
+                });
+            }
             try {
                 // 加载命令库
-                const response = await fetch('data.json');
+                const response = await fetch(`${basePath}默认命令库.json`);
                 mcData = await response.json();
 
                 // 加载声音库
-                const soundRes = await fetch('minecraft_sound/sound_definitions.json');
+                const soundRes = await fetch(`${basePath}minecraft_sound/sound_definitions.json`);
                 const soundJson = await soundRes.json();
 
                 // 关键点 A：确保指向 sound_definitions 这一层
@@ -657,7 +727,7 @@
 
                         // 生成按钮 HTML
                         buttonsHtml = soundList.map((path, index) => {
-                            const fullPath = `minecraft_sound/${path}.ogg`;
+                            const fullPath = `${basePath}minecraft_sound/${path}.ogg`;
                             return `
                 <div class="sound-play-btn" onclick="playSound('${fullPath}', event)" title="播放变体 ${index + 1}">
                     <span class="material-icons">play_arrow</span>
@@ -673,8 +743,8 @@
                 if (isEntity) {
                     effectClass = 'entity-item';
                     const fileName = text.includes(':') ? text.split(':')[1] : text;
-                    const basePath = `minecraft_mob/${fileName}`;
-                    imgHtml = `<img src="${basePath}.gif" class="entity-icon" onerror="this.onerror=null; this.src='${basePath}.png';">`;
+                    const basePath1 = `${basePath}minecraft_mob/${fileName}`;
+                    imgHtml = `<img src="${basePath1}.gif" class="entity-icon" onerror="this.onerror=null; this.src='${basePath1}.png';">`;
                 }
 
                 // --- 药水效果逻辑 ---
@@ -684,20 +754,20 @@
                     let particles = '';
                     for (let i = 0; i < 10; i++) {
                         particles += `<div class="particle" style="
-                    background-image: url('minecraft_effects/particle_${fileName}.png');
+                    background-image: url('${basePath}minecraft_effects/particle_${fileName}.png');
                     left: ${Math.random() * 95}%;
                     animation-delay: ${Math.random() * 2}s;
                     animation-duration: ${2 + Math.random() * 2}s;
                 "></div>`;
                     }
                     particleHtml = `<div class="particle-container">${particles}</div>`;
-                    imgHtml = `<img src="minecraft_effects/${fileName}.png" class="suggest-icon" onerror="this.style.display='none'">`;
+                    imgHtml = `<img src="${basePath}minecraft_effects/${fileName}.png" class="suggest-icon" onerror="this.style.display='none'">`;
                 }
 
                 // --- 物品/方块图标逻辑 ---
                 else if (listType === 'block' || listType === 'item') {
                     const fileName = text.includes(':') ? text.split(':')[1] : text;
-                    imgHtml = `<img src="minecraft_items/${fileName}.png" class="suggest-icon" onerror="this.style.display='none'">`;
+                    imgHtml = `<img src="${basePath}minecraft_items/${fileName}.png" class="suggest-icon" onerror="this.style.display='none'">`;
                 }
 
                 // 3. 返回最终生成的 HTML
@@ -710,7 +780,7 @@
                     ${desc ? `<span class="suggestion-description">${desc}</span>` : ''}
                 </div>
                 ${particleHtml}
-                ${(isSelected && !isEntity) ? '<span class="suggest-alias">TAB 确认</span>' : ''}
+                ${(isSelected && !isEntity) ? '<span class="suggest-alias">TAB 聚焦 /空格 填充</span>' : ''}
             </div>
         `;
             }).join('');
@@ -795,11 +865,15 @@
             let possibleParamsAtCursor = [];
             patternKeys.forEach(key => {
                 const p = patterns[key];
-                const param = p.params[activeIdx];
-                if (param) {
-                    // 根据参数名去重，避免显示重复的 <目的地实体>
-                    if (!possibleParamsAtCursor.find(x => x.name === param.name)) {
-                        possibleParamsAtCursor.push(param);
+                const activeIdxForThisPattern = calculateActiveIndex(args, p.params, endsWithSpace);
+
+                // 只有当该模式真正匹配（不返回 -1）时，才允许收集它的参数建议！
+                if (activeIdxForThisPattern !== -1) {
+                    const param = p.params[activeIdxForThisPattern];
+                    if (param) {
+                        if (!possibleParamsAtCursor.find(x => x.name === param.name)) {
+                            possibleParamsAtCursor.push(param);
+                        }
                     }
                 }
             });
@@ -840,14 +914,17 @@
             patternKeys.forEach(key => {
                 const p = patterns[key];
 
-                // 【修改】为每个模式独立计算索引，确保类型匹配
+                // 为每个模式独立计算索引
                 const activeIdxForThisPattern = calculateActiveIndex(args, p.params, endsWithSpace);
 
-                // 如果返回 -1，说明输入的内容与此模式类型冲突，直接不渲染该行
                 if (activeIdxForThisPattern === -1) return;
 
-                let rowContent = `<div class="syntax-row active">`;
-                rowContent += `<span class="cmd-name">/${inputCmd}</span> `;
+                // 使用 flex 纵向排列
+                let rowContent = `<div class="syntax-row active" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">`;
+
+                // 1. 【顶部】先拼接指令及参数行
+                let cmdLine = `<div class="syntax-cmd-line">`;
+                cmdLine += `<span class="cmd-name">/${inputCmd}</span> `;
 
                 p.params.forEach((param, i) => {
                     let displayValue = "";
@@ -861,15 +938,27 @@
 
                     // 高亮逻辑
                     if (i === activeIdxForThisPattern) {
-                        rowContent += `<span class="syntax-active">${displayValue}</span> `;
-                        // 收集当前位置建议
+                        cmdLine += `<span class="syntax-active">${displayValue}</span> `;
+                    } else {
+                        cmdLine += `<span class="param-hint">${displayValue}</span> `;
+                    }
+                });
+                cmdLine += `</div>`;
+                rowContent += cmdLine;
+
+                // 收集当前位置建议
+                p.params.forEach((param, i) => {
+                    if (i === activeIdxForThisPattern) {
                         if (!possibleParamsAtCursor.find(x => x.name === param.name)) {
                             possibleParamsAtCursor.push(param);
                         }
-                    } else {
-                        rowContent += `<span class="param-hint">${displayValue}</span> `;
                     }
                 });
+
+                // 2. 【底部】后拼接模式描述
+                if (p.description) {
+                    rowContent += `<div class="pattern-description" style="opacity: 0.75; font-size: 0.85em;">${p.description}</div>`;
+                }
 
                 rowContent += `</div>`;
                 syntaxHtml += rowContent;
@@ -892,53 +981,80 @@
             for (let i = 0; i < params.length; i++) {
                 const paramConfig = params[i];
 
-                // 如果当前输入指针已经超出了用户输入的单词量
+                // 如果当前输入指针已经超出了用户输入的单词量，直接返回当前索引 i
                 if (argPtr >= args.length) return i;
 
                 if (paramConfig.type === "subcommand" || paramConfig.name === "子命令") {
-                    // 如果用户已经输入了内容（例如输入了 'at'）
                     if (argPtr < args.length) {
-                        const subCommandName = args[argPtr];
-                        // 此时应该去 mcData.commands 找这个新的子命令分支
-                        // 但为了保持 UI 简洁，我们返回当前索引 i，标记为正在输入子命令
                         return i;
                     }
                     return i;
                 }
+
                 if (argPtr >= args.length) return i;
 
                 const currentArg = args[argPtr];
 
+                // 【新增核心校验】：如果该参数带有列表/建议集约束 (如 suggestion, list, enum)，必须严格校验输入项是否合法
+                const listKey = paramConfig.list || paramConfig.enum || paramConfig.suggestion;
+                if (listKey && currentArg !== "") {
+                    let validOptions = [];
+
+                    // 1. 从 enums 中获取合法选项
+                    if (mcData.enums && mcData.enums[listKey]) {
+                        const enumData = mcData.enums[listKey];
+                        validOptions = Array.isArray(enumData)
+                            ? enumData.map(item => typeof item === 'string' ? item : item.text)
+                            : Object.keys(enumData);
+                    }
+                    // 2. 从 idlist 中获取合法选项
+                    else if (mcData.idlist) {
+                        const target = mcData.idlist.find(item => item.list === listKey);
+                        if (target) {
+                            const data = target.data || target.list;
+                            validOptions = Array.isArray(data) ? data : Object.keys(data);
+                        }
+                    }
+
+                    // 如果成功找到了合法的候选项集合，进行匹配性拦截
+                    if (validOptions.length > 0) {
+                        const argVal = currentArg.toLowerCase();
+                        const isMatched = validOptions.some(opt => {
+                            const optStr = (typeof opt === 'string' ? opt : (opt.text || "")).toLowerCase();
+                            if (!endsWithSpace && argPtr === args.length - 1) {
+                                return optStr.startsWith(argVal); // 正在输入最后一位时，允许前缀匹配
+                            } else {
+                                return optStr === argVal; // 已经敲了空格进入下一位，必须完全一致
+                            }
+                        });
+
+                        // 如果用户输入的内容（比如在效果ID位输入了 clear）完全不符合该列表的任何选项，直接淘汰此模式！
+                        if (!isMatched) {
+                            return -1;
+                        }
+                    }
+                }
+
                 if (paramConfig.type === "position") {
-                    // --- 坐标逻辑修正开始 ---
-                    // 坐标占用 3 个位置。我们需要判断用户当前填到了第几个。
-                    // 剩余未处理的参数数量
+                    // --- 坐标逻辑 ---
                     const remainingArgs = args.length - argPtr;
 
-                    // 如果用户还没输完 3 个坐标位，或者输完了 3 个但没按空格（表示还在写 z）
                     if (remainingArgs < 3 || (remainingArgs === 3 && !endsWithSpace)) {
-                        // 检查已输入的部分是否符合坐标格式（简单正则）
                         const currentChunk = args[argPtr];
                         if (currentChunk !== "" && !/^[~^0-9.-]/.test(currentChunk)) {
                             return -1; // 类型不匹配，排除此模式
                         }
-                        return i; // 依然判定为当前 position 参数位
+                        return i;
                     }
 
-                    // 如果已经输满了 3 位且有后续空格，指针跳过这 3 位
                     argPtr += 3;
-                    // --- 坐标逻辑修正结束 ---
                 } else {
                     // 普通参数逻辑
-                    const currentArg = args[argPtr];
                     if (currentArg !== "") {
                         if (paramConfig.type === "plain") {
                             const argValue = currentArg.toLowerCase();
-                            const paramValue = (paramConfig.name || "").toLowerCase();
+                            const paramValue = (paramConfig.name || paramConfig.prompt || "").toLowerCase();
 
-                            // --- 核心修正：允许前缀匹配 ---
-                            // 如果是正在输入的最后一位（还没敲空格），使用 startsWith 允许模糊匹配
-                            // 如果已经敲了空格（开始输入下一位了），则要求必须完全相等
                             if (!endsWithSpace && argPtr === args.length - 1) {
                                 if (!paramValue.startsWith(argValue)) return -1;
                             } else {
@@ -946,19 +1062,27 @@
                             }
                         }
 
-                        // 2. 原有的坐标检查
                         if (paramConfig.type === "position") {
                             if (!/^[~^0-9.-]/.test(currentArg)) return -1;
-                        }
-
-                        // 3. 原有的选择器检查
-                        else if (paramConfig.type === "selector") {
+                        } else if (paramConfig.type === "selector") {
                             if (/^[~^0-9.-]/.test(currentArg)) return -1;
+                        }
+                        // 在校验 uint / int 时，如果输入了非数字，除了返回 -1 之外，记录错误原因
+                        if (paramConfig.type === "uint") {
+                            if (currentArg !== "" && !/^[0-9]+$/.test(currentArg)) {
+                                // 记录类型匹配失败的提示
+                                currentErrorHint = `参数 “${paramConfig.name}” 不符合无符号整数 (uint) 规范`;
+                                return -1;
+                            }
+                        } else if (paramConfig.type === "int") {
+                            if (currentArg !== "" && !/^[+-]?[0-9]+$/.test(currentArg)) {
+                                currentErrorHint = `参数 “${paramConfig.name}” 不符合有符号整数 (int) 规范`;
+                                return -1;
+                            }
                         }
                     }
                     argPtr += 1;
 
-                    // 如果还没输入空格，且当前单词就是这一位
                     if (!endsWithSpace && argPtr >= args.length) return i;
                 }
             }
@@ -1062,24 +1186,34 @@
 
             // 过滤逻辑
             const normalizedFilter = filterText.trim().toLowerCase();
-            // 找到这行：const filtered = allSuggestions.filter(item => { ... });
 
             const filtered = allSuggestions.filter(item => {
                 if (!normalizedFilter) return true;
-
-                // 提取英文 ID
                 const text = (typeof item === 'object' ? item.text : item).toLowerCase();
-                // 提取中文描述 (desc)
                 const desc = (typeof item === 'object' ? (item.desc || "") : "").toLowerCase();
-
-                // 如果英文 ID 包含关键词，或者中文描述包含关键词，则返回 true
                 return text.includes(normalizedFilter) || desc.includes(normalizedFilter);
             });
 
-            // 去重
+            // 核心：增加自定义排序
+            const sortedSuggestions = filtered.sort((a, b) => {
+                const textA = (typeof a === 'object' ? a.text : a).toLowerCase();
+                const textB = (typeof b === 'object' ? b.text : b).toLowerCase();
+
+                const hasPrefixA = textA.startsWith('minecraft:');
+                const hasPrefixB = textB.startsWith('minecraft:');
+
+                // 如果 A 没有前缀而 B 有，则 A 应该排在前面
+                if (!hasPrefixA && hasPrefixB) return -1;
+                if (hasPrefixA && !hasPrefixB) return 1;
+
+                // 如果都有或都没有前缀，保持字母顺序
+                return textA.localeCompare(textB);
+            });
+
+            // 去重逻辑应用到已排序的列表
             const uniqueSuggestions = [];
             const map = new Map();
-            for (const item of filtered) {
+            for (const item of sortedSuggestions) {
                 const text = typeof item === 'object' ? item.text : item;
                 if (!map.has(text)) {
                     map.set(text, true);
@@ -1136,6 +1270,41 @@
                 console.error("音频播放失败，请检查路径:", path, err);
             });
         }
+        // --- 【新增】主题切换联动逻辑 ---
+        function syncTheme(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                document.body.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.body.classList.remove('dark');
+            }
+        }
+
+        // 1. 初始化检查：无论是独立运行还是被注入，先检测当前状态
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isHostDark = document.documentElement.classList.contains('dark') || window.parent.document.documentElement?.classList.contains('dark');
+
+        if (isHostDark || savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+            syncTheme(true);
+        } else {
+            syncTheme(false);
+        }
+
+        // 2. 监听情况 A：当作为 iframe 嵌套时，接收主页面的 postMessage
+        window.addEventListener('message', function (event) {
+            if (event.data && event.data.type === 'themeChange') {
+                syncTheme(event.data.isDark);
+            }
+        });
+
+        // 3. 监听情况 B：当作为 HTML 直接注入主页面时，监听自定义全局事件
+        window.addEventListener('mainThemeChange', function (event) {
+            if (event.detail && typeof event.detail.isDark !== 'undefined') {
+                syncTheme(event.detail.isDark);
+            }
+        });
         loadData();
 
     </script>
