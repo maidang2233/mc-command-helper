@@ -566,7 +566,7 @@
 
     <script>
         let isCurrentDark = document.documentElement.classList.contains('dark');
-        let pathPrefix = '';
+        let basePath = "";
         let currentSuggestions = [];
         let selectedIndex = -1;
         let mcData = null;
@@ -587,7 +587,7 @@
         @font-face {
             font-family: 'MinecraftFont';
             /* 这是你给字体起的名字 */
-            src: url('${}fonts/minecraft_fort.ttf') format('truetype');
+            src: url('${basePath}fonts/minecraft_fort.ttf') format('truetype');
             /* 确保路径正确 */
             font-weight: normal;
             font-style: normal;
@@ -597,7 +597,7 @@
         /* 2. 定义图标字体 */
         @font-face {
             font-family: 'Material Symbols Outlined';
-            src: url('${}fonts/material-symbols-outlined.woff2') format('woff2');
+            src: url('${basePath}fonts/material-symbols-outlined.woff2') format('woff2');
         }
 
 `;
@@ -633,7 +633,7 @@
             }
             try {
                 // 加载命令库
-                const response = await fetch(`$data.json`);
+                const response = await fetch(`${basePath}默认命令库.json`);
                 mcData = await response.json();
 
                 // 加载声音库
