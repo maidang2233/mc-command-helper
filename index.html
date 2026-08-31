@@ -566,7 +566,7 @@
 
     <script>
         let isCurrentDark = document.documentElement.classList.contains('dark');
-        let  = decodeURIComponent(window.location.pathname).includes('指令助手') ? '' : '指令助手/';
+        let pathPrefix = '';
         let currentSuggestions = [];
         let selectedIndex = -1;
         let mcData = null;
